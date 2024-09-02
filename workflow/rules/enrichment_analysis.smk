@@ -18,7 +18,7 @@ rule region_enrichment_analysis_LOLA:
         "logs/rules/region_enrichment_analysis_LOLA_{region_set}_{database}.log"
     script:
         "../scripts/region_enrichment_analysis_LOLA.R"
-        
+
 # performs region enrichment analysis using GREAT
 rule region_enrichment_analysis_GREAT:
     input:
@@ -38,7 +38,7 @@ rule region_enrichment_analysis_GREAT:
         "logs/rules/region_enrichment_analysis_GREAT_{region_set}_{database}.log"
     script:
         "../scripts/region_enrichment_analysis_GREAT.R"
-        
+
 # region-gene association using GREAT for downstream gene-base analysis of genomic regions
 rule region_gene_association_GREAT:
     input:
@@ -107,7 +107,7 @@ rule region_motif_enrichment_analysis_pycisTarget:
                 --name {wildcards.region_set} \
                 --output_mode 'hdf5' \
                 --write_html
-        }} || {{ 
+        }} || {{
             echo "An error occurred during the region TFBS motif enrichment analysis using pycisTarget"; touch {output.motif_hdf5} {output.motif_html}; exit 0;
         }}
         """
@@ -129,7 +129,7 @@ rule process_results_pycisTarget:
         "logs/rules/process_results_pycisTarget_{region_set}_{database}.log"
     script:
         "../scripts/process_results_pycisTarget.py"
-                
+
 # performs gene over-represenation analysis (ORA) using GSEApy
 rule gene_ORA_GSEApy:
     input:
@@ -150,7 +150,7 @@ rule gene_ORA_GSEApy:
         "logs/rules/gene_ORA_GSEApy_{gene_set}_{db}.log"
     script:
         "../scripts/gene_ORA_GSEApy.py"
-        
+
 # performs gene preranked GSEA and generate plots using GSEApy
 rule gene_preranked_GSEApy:
     input:
@@ -198,7 +198,7 @@ rule plot_enrichment_result:
         enrichment_result=os.path.join(result_path,'{feature_set}','{tool}','{db}','{feature_set}_{db}.csv'),
     output:
         enrichment_plot=report(os.path.join(result_path,'{feature_set}','{tool}','{db}','{feature_set}_{db}.png'),
-                             caption="../report/enrichment_plot.rst", 
+                             caption="../report/enrichment_plot.rst",
                              category="{}_{}".format(config["project_name"], module_name),
                              subcategory="{feature_set}",
                                labels={
@@ -217,3 +217,19 @@ rule plot_enrichment_result:
         "logs/rules/plot_enrichment_result_{tool}_{feature_set}_{db}.log"
     script:
         "../scripts/enrichment_plot.R"
+
+        # """
+        # echo "Input file: {input.enrichment_result}"
+        # echo "Output file: {output.enrichment_plot}"
+        # echo "Partition: {params.partition}"
+        # echo "Threads: {threads}"
+        # echo "Memory (MB): {resources.mem_mb}"
+        # echo "Conda environment: {conda}"
+        # echo "Log file: {log}"
+        # echo "Feature set: {wildcards.feature_set}"
+        # echo "Tool: {wildcards.tool}"
+        # echo "Database: {wildcards.db}"
+
+        # Rscript ../scripts/enrichment_plot.R {wildcards.feature_set} {wildcards.tool} {wildcards.db}
+        # """
+

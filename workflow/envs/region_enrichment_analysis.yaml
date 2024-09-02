@@ -1,7 +1,7 @@
 name: region_enrichment_analysis
 channels:
-  - conda-forge
   - bioconda
+  - conda-forge
   - defaults
 dependencies:
   - r-base=4.3.3
@@ -17,3 +17,4 @@ dependencies:
   - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene=3.2.2
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene=3.18.0
   - bioconductor-txdb.mmusculus.ucsc.mm9.knowngene=3.2.2
+  - bioconductor-genomicranges

@@ -1,36 +1,30 @@
+def process_results_pycisTarget(region_set, database, term_col, conda_env):
+    result_path = os.path.abspath('test/results')
 
-# libraries
-import os
-import pycistarget
-from pycistarget.input_output import read_hdf5
+    # Generate paths
+    motif_hdf5_path = os.path.join(result_path, region_set, 'pycisTarget', database, f'motif_enrichment_cistarget_{region_set}.hdf5')
+    motif_csv_path = os.path.join(result_path, region_set, 'pycisTarget', database, f'{region_set}_{database}.csv')
 
-# configs
+    print(f"Processing results for region set: {region_set} and database: {database}")
+    print(f"Expected .hdf5 file path: {motif_hdf5_path}")
 
-# input
-motif_hdf5_path = snakemake.input['motif_hdf5']
+    if not os.path.exists(motif_hdf5_path):
+        print(f"File not found at: {motif_hdf5_path}")
+        raise FileNotFoundError(f"Input file '{motif_hdf5_path}' not found.")
 
-# output
-motif_csv_path = snakemake.output['motif_csv']
+    # Load results from HDF5
+    results = read_hdf5(motif_hdf5_path)
+    results_df = results[region_set].motif_enrichment
 
-# parameters
-region_set_name = snakemake.wildcards["region_set"]
-term_col = snakemake.config["pycistarget_parameters"]["annotations_to_use"][0]
+    # Print available columns for debugging
+    print("Available columns:", results_df.columns)
 
-# quit early if file is empty
-if os.path.getsize(motif_hdf5_path) == 0:
-    open(motif_csv_path, 'w').close()
-    quit()
+    # Ensure term_col exists in DataFrame
+    if term_col not in results_df.columns:
+        raise KeyError(f"Column '{term_col}' not found in the DataFrame.")
 
-# load pycisTarget results from hdf5
-results = read_hdf5(motif_hdf5_path)
+    # Add 'description' column to DataFrame
+    results_df["description"] = results_df["motif"] + "(" + results_df[term_col] + ")"
 
-# extract results
-results_df = results[region_set_name].motif_enrichment
-
-# reformat
-results_df.index.name = "motif"
-results_df.reset_index(inplace=True)
-results_df["description"] = results_df["motif"] + "(" + results_df[term_col] + ")"
-
-# save motif enrichments as CSV for downstream processing and plotting
-results_df.to_csv(motif_csv_path)
+    # Save to CSV
+    results_df.to_csv(motif_csv_path, index=False)

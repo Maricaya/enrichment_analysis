@@ -36,7 +36,7 @@ genes = pd.read_csv(query_genes_path, index_col=0)
 
 # load database GMT file
 db_dict = gp.parser.read_gmt(database_path)
-    
+
 # convert all genes to upper case
 genes.index = [str(x).upper() for x in list(genes.index)]
 db_dict = {key: [ele.upper() for ele in db_dict[key] ] for key in db_dict}
@@ -51,7 +51,7 @@ score_col = genes.columns[0]
 genes[score_col] = genes[score_col].replace([np.inf, -np.inf], [genes[score_col][genes[score_col] != np.inf].max(), genes[score_col][genes[score_col] != -np.inf].min()])
 
 # run prerank GSEA of database with GSEApy
-res = gp.prerank(rnk=genes, 
+res = gp.prerank(rnk=genes,
                  gene_sets=db_dict,
                  #threads=4,
                  min_size=1, # Minimum allowed number of genes from gene set also the data set. Default: 15.

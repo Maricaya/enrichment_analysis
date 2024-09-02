@@ -10,14 +10,14 @@ result_path: test/results
 project_name: example
 
 # genome
-# human 'hg19' or 'hg38' 
+# human 'hg19' or 'hg38'
 # mouse 'mm9' or 'mm10'
 genome: 'hg19'
 
 ##### DATABASES #####
 # path to local databases as GMT (*.gmt) or JSON (*.json) files with gene symbols!
 # will be used by rGREAT for genomic regions and GSEApy for genes
-# GMT databases can be donwloaded from 
+# GMT databases can be donwloaded from
 #     MSigDB (http://www.gsea-msigdb.org/gsea/msigdb)
 #     Enrichr (https://maayanlab.cloud/Enrichr/#libraries)
 # JSON example content: { "MyDB_Term1": ["geneA","geneB","geneC"],"MyDB_Term2": ["geneX","geneY","geneZ"]}

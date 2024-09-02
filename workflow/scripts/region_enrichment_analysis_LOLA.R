@@ -1,53 +1,54 @@
-
 # load libraries
 library("LOLA")
 library("GenomicRanges")
 library("data.table")
 
-# configs
+# Capture command-line arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 3) {
+  stop("Usage: Rscript region_enrichment_analysis_LOLA.R <query_regions.bed> <database_path> <result_path>")
+}
 
-# input
-query_regions <- snakemake@input[["regions"]]
-background_regions <- snakemake@input[["background"]]
-database_path <- snakemake@input[["database"]]
+# Assign command-line arguments to variables
+query_regions <- args[1]
+database_path <- args[2]
+result_path <- args[3]
 
-# output
-result_path <- snakemake@output[["result"]]
+# Define parameters (you can modify these based on your specific analysis requirements)
+genome <- "hg38"  # or "mm10" depending on your use case
+database_name <- basename(database_path)  # use the folder name as the database name
+region_set <- basename(query_regions)  # use the file name as the region set name
 
-# parameters
-database_name <- snakemake@wildcards[["database"]]
-genome <- snakemake@config[["genome"]] #"hg38" "mm10"
-region_set <- snakemake@wildcards[["region_set"]]
+### Load data
 
-### load data
-
-# load query region sets
+# Load query region sets
 regionSet_query <- readBed(query_regions)
 
-# load background/universe region sets (e.g., consensus region set)
-regionSet_background <- readBed(background_regions)
+# Load background/universe region sets (e.g., consensus region set)
+# If you have a specific background, add it here. For now, we'll assume the background is embedded in the database.
+# Uncomment the following line if a specific background is required:
+# regionSet_background <- readBed(background_regions)
 
-# requires resources downloaded from: https://databio.org/regiondb
-# requires simpleCache package installed
+# Load the database (requires resources downloaded from https://databio.org/regiondb)
 database <- loadRegionDB(file.path(database_path))
 
 ###### LOLA
 
-# run LOLA
-res <- runLOLA(regionSet_query, regionSet_background, database, cores=1)
+# Run LOLA
+res <- runLOLA(regionSet_query, regionSet_query, database, cores=1)  # replace regionSet_background with your background if necessary
 
-# make description more descriptive
-if (database_name=='LOLACore'){
+# Make description more descriptive
+if (database_name == 'LOLACore') {
     res$description <- paste(res$description, res$cellType, res$antibody, sep='.')
-}else{
+} else {
     res$description <- paste(res$description, res$filename, sep='.')
 }
-    
-# format description that values are unique
+
+# Ensure that the description values are unique
 res$description <- make.names(res$description, unique=TRUE)
 
-# determine raw p-value
-res$pValue <- ('^'(10,-1*res[['pValueLog']]))
+# Determine raw p-value
+res$pValue <- 10^(-1 * res[['pValueLog']])
 
-# save results
+# Save results
 fwrite(as.data.frame(res), file=file.path(result_path), row.names=FALSE)

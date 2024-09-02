@@ -1,63 +1,54 @@
-#!/bin/env python
+#!/usr/bin/env python3
 
-# load libraries
-import pandas as pd
 import os
-import numpy as np
+import sys
+import yaml
+import pandas as pd
+import argparse
 
-# configs
+# 解析命令行参数
+parser = argparse.ArgumentParser(description="Aggregate enrichment results.")
+parser.add_argument('--enrichment_results', nargs='+', required=True, help="List of enrichment result files.")
+parser.add_argument('--results_all', required=True, help="Path to save all combined results.")
+parser.add_argument('--results_sig', required=True, help="Path to save significant results.")
+parser.add_argument('--group', required=True, help="Group name.")
+parser.add_argument('--tool', required=True, help="Tool name.")
+parser.add_argument('--db', required=True, help="Database name.")
+parser.add_argument('--config', required=True, help="Path to the config file.")
+args = parser.parse_args()
 
-# input
-result_paths = snakemake.input['enrichment_results']
+# 加载配置文件
+with open(args.config, 'r') as file:
+    config_data = yaml.safe_load(file)
 
-# output
-results_all_path = snakemake.output['results_all']
-results_sig_path = snakemake.output['results_sig']
+term_col = config_data["column_names"][args.tool]["term"]
+adjp_col = config_data["column_names"][args.tool]["adj_pvalue"]
+adjp_th = config_data["adjp_th"][args.tool]
 
-# parameters
-group = snakemake.wildcards["group"]
-tool = snakemake.wildcards["tool"]
-db = snakemake.wildcards["db"]
-
-term_col = snakemake.config["column_names"][tool]["term"]
-adjp_col = snakemake.config["column_names"][tool]["adj_pvalue"]
-
-adjp_th = snakemake.config["adjp_th"][tool]
-
-dir_results = os.path.dirname(results_all_path)
-if not os.path.exists(dir_results):
-    os.mkdir(dir_results)
-
-# load results
-results_list = list()
-for result_path in result_paths:
-    if os.stat(result_path).st_size != 0:
-        tmp_name = os.path.basename(result_path).replace("_{}.csv".format(db),"")
+# 加载所有的结果文件
+results_list = []
+for result_path in args.enrichment_results:
+    if os.path.exists(result_path) and os.path.getsize(result_path) > 0:
+        tmp_name = os.path.basename(result_path).replace(f"_{args.db}.csv", "")
         tmp_res = pd.read_csv(result_path, index_col=0)
         tmp_res['name'] = tmp_name
         results_list.append(tmp_res)
-        
-        
-# move on if results are empty
-if len(results_list)==0:
-    open(results_all_path, mode='a').close()
-    open(results_sig_path, mode='a').close()
+
+# 如果没有有效的结果文件，创建空文件并退出
+if not results_list:
+    pd.DataFrame().to_csv(args.results_all)
+    pd.DataFrame().to_csv(args.results_sig)
     sys.exit(0)
-        
-# concatenate all results into one results dataframe
+
+# 将所有结果文件合并为一个 DataFrame
 result_df = pd.concat(results_list, axis=0)
+result_df.to_csv(args.results_all)  # 保存所有的合并结果
 
-# save all enirchment results
-result_df.to_csv(results_all_path)
-
-# find union of statistically significant terms
-if tool=="pycisTarget" or tool=="RcisTarget":
+# 根据显著性水平过滤结果
+if args.tool in ["pycisTarget", "RcisTarget"]:
     sig_terms = result_df.loc[result_df[adjp_col] >= adjp_th, term_col].unique()
 else:
     sig_terms = result_df.loc[result_df[adjp_col] <= adjp_th, term_col].unique()
 
-# filter by significant terms
 result_sig_df = result_df.loc[result_df[term_col].isin(sig_terms), :]
-
-# save filtered enirchment results by significance
-result_sig_df.to_csv(results_sig_path)
+result_sig_df.to_csv(args.results_sig)  # 保存显著性过滤后的结果
